@@ -73,3 +73,21 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# NOMINAL - additional Unreal Engine exclusions
+Intermediate/
+Saved/
+DerivedDataCache/
+
+# IDE temporary files
+.idea/
+.vscode/
+
+# Temporary database files
+*.db-shm
+*.db-wal
+*.vsidx
+
+# Visual Studio generated files
+*.slnx
+UpgradeLog.htm
