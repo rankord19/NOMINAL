@@ -8,18 +8,26 @@ remain available to demonstrate rejection. The scrollable log retains 100 entrie
 Restart the game or Play session to reset. These are prototype controls, not
 readiness checks or scientific outcome rules.
 
-## Launch on this workstation
+## Build and launch from either checkout
 
-Build from PowerShell:
+The user's primary local checkout is `D:\GitHub\NOMINAL`. The agent working
+directory is `D:\GitHub\NOMINAL-Astra`. Use the checkout containing the prototype
+branch (`codex/mission-control-prototype`, or `main` after it is merged).
+
+In PowerShell, set the checkout and engine paths below. To use the agent checkout,
+change `$NominalCheckout` to `D:\GitHub\NOMINAL-Astra`. Then build:
 
 ```powershell
-& 'D:\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat' NOMINALEditor Win64 Development '-Project=D:\GitHub\NOMINAL-Astra\NOMINAL.uproject' -WaitMutex -NoHotReloadFromIDE
+$NominalCheckout = 'D:\GitHub\NOMINAL'
+$NominalEngine = 'D:\Epic Games\UE_5.8'
+$NominalProject = Join-Path $NominalCheckout 'NOMINAL.uproject'
+& (Join-Path $NominalEngine 'Engine\Build\BatchFiles\Build.bat') NOMINALEditor Win64 Development "-Project=$NominalProject" -WaitMutex -NoHotReloadFromIDE
 ```
 
-Then launch:
+After a successful build, launch from the same PowerShell session:
 
 ```powershell
-& 'D:\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' 'D:\GitHub\NOMINAL-Astra\NOMINAL.uproject' -game -windowed -ResX=1280 -ResY=720
+& (Join-Path $NominalEngine 'Engine\Binaries\Win64\UnrealEditor.exe') $NominalProject -game -windowed -ResX=1280 -ResY=720
 ```
 
 Alternatively open the project in the editor and press Play (not Simulate), on a

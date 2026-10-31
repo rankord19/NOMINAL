@@ -25,7 +25,7 @@ NOMINAL — MASTER DESIGN DOCUMENT
 
 [РЕШЕНО] Название игры: NOMINAL (именно так, заглавными буквами).
 [РЕШЕНО] Движок: Unreal Engine 5.
-[РЕШЕНО] Репозиторий GitHub: https://github.com/rankordi9/NOMINAL
+[РЕШЕНО] Репозиторий GitHub: https://github.com/rankord19/NOMINAL
 [РЕШЕНО] Локальная папка на Windows: D:\GitHub\NOMINAL
 [РЕШЕНО] Разработка с использованием AI coding agents, но архитектурные и гейм-дизайн решения контролирует пользователь.
 [РЕШЕНО] В рабочем наборе: Astra 5 Codex; Claude Opus 5.5 через Antigravity; Gemini Argon через Antigravity. НЕ путать Claude Opus 5.5 с моделью OpenAI.
