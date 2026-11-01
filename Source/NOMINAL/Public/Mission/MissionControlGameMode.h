@@ -20,8 +20,10 @@ public:
 	void AdvancePhase();
 	FText PhaseText() const;
 	FText LogText() const;
+	void ShowOrbitalView(bool bShow);
 private:
 	FMissionLifecycle Lifecycle;
 	TArray<FString> Entries;
 	TSharedPtr<SWidget> ControlWidget;
+	TSharedPtr<SWidget> OrbitalWidget;
 };
