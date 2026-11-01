@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Mission/MissionLifecycle.h"
+#include "Spacecraft/SpacecraftConfiguration.h"
+#include "Spacecraft/SpacecraftPresentation.h"
 #include "MissionControlGameMode.generated.h"
 
 class SWidget;
@@ -21,9 +23,15 @@ public:
 	FText PhaseText() const;
 	FText LogText() const;
 	void ShowOrbitalView(bool bShow);
+	void ShowDesigner();
+	FString InstallModule(FName SlotId, FName ModuleId);
+	const FSpacecraftConfiguration& GetSpacecraftConfiguration() const { return Spacecraft; }
 private:
+	FSpacecraftConfiguration Spacecraft;
+	FSpacecraftPresentation Presentation;
 	FMissionLifecycle Lifecycle;
 	TArray<FString> Entries;
 	TSharedPtr<SWidget> ControlWidget;
 	TSharedPtr<SWidget> OrbitalWidget;
+	TSharedPtr<SWidget> DesignerWidget;
 };
