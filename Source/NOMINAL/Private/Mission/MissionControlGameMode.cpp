@@ -13,6 +13,8 @@
 #include "Widgets/SCompoundWidget.h"
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
+#include "Spacecraft/SSpacecraftDesigner.h"
+#include "Widgets/Layout/SBox.h"
 
 namespace
 {
@@ -123,6 +125,9 @@ FText AMissionControlGameMode::LogText() const
 void AMissionControlGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!Presentation.Initialize(GetWorld()))
+		UE_LOG(LogTemp, Warning, TEXT("Spacecraft designer: missing tagged visual parts; use L_LunarOrbit."));
+	Presentation.Apply(Spacecraft);
 	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
 	if (!Viewport || IsRunningDedicatedServer()) return;
 	Entries.Add(TEXT("SESSION START | Mission Planning"));
@@ -147,6 +152,8 @@ void AMissionControlGameMode::BeginPlay()
 				[ SNew(SButton).Text(FText::FromString(TEXT("Request failure"))).OnClicked_Lambda([this]() { RequestPhase(EMissionPhase::Failed); return FReply::Handled(); }) ]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
 				[ SNew(SButton).Text(FText::FromString(TEXT("Enter lunar view"))).OnClicked_Lambda([this]() { ShowOrbitalView(true); return FReply::Handled(); }) ]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
+				[ SNew(SButton).Text(FText::FromString(TEXT("Spacecraft Designer"))).OnClicked_Lambda([this]() { ShowDesigner(); return FReply::Handled(); }) ]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 32)
 			[ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("Manual lifecycle controls. Completion does not grade scientific success. Terminal requests are rejected and logged. Restart Play for a new session."))) ]
@@ -158,8 +165,13 @@ void AMissionControlGameMode::BeginPlay()
 	Viewport->AddViewportWidgetContent(ControlWidget.ToSharedRef(), 10);
 	ALunarCameraPawn* CameraPawn = Cast<ALunarCameraPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	TSharedRef<SOrbitalCanvas> Canvas = SNew(SOrbitalCanvas).CameraPawn(CameraPawn);
+	DesignerWidget = SNew(SBox).WidthOverride(380)
+		[ SNew(SSpacecraftDesigner).Configuration(&Spacecraft)
+			.Install([this](FName Slot, FName Module) { return InstallModule(Slot, Module); }) ];
+	DesignerWidget->SetVisibility(EVisibility::Collapsed);
 	OrbitalWidget = SNew(SOverlay)
 		+ SOverlay::Slot() [ Canvas ]
+		+ SOverlay::Slot().HAlign(HAlign_Left).Padding(16, 112, 0, 16) [ DesignerWidget.ToSharedRef() ]
 		+ SOverlay::Slot().VAlign(VAlign_Top)
 		[
 			SNew(SBorder).Padding(16).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -199,8 +211,25 @@ void AMissionControlGameMode::BeginPlay()
 
 void AMissionControlGameMode::ShowOrbitalView(bool bShow)
 {
-	ControlWidget->SetVisibility(bShow ? EVisibility::Collapsed : EVisibility::Visible);
-	OrbitalWidget->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
+	if (ControlWidget) ControlWidget->SetVisibility(bShow ? EVisibility::Collapsed : EVisibility::Visible);
+	if (OrbitalWidget) OrbitalWidget->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
+	if (DesignerWidget) DesignerWidget->SetVisibility(EVisibility::Collapsed);
+}
+
+void AMissionControlGameMode::ShowDesigner()
+{
+	ShowOrbitalView(true);
+	if (DesignerWidget) DesignerWidget->SetVisibility(EVisibility::Visible);
+	if (auto* Controller = GetWorld()->GetFirstPlayerController())
+		if (auto* Camera = Cast<ALunarCameraPawn>(Controller->GetPawn())) Camera->FocusMoon(false);
+}
+
+FString AMissionControlGameMode::InstallModule(FName SlotId, FName ModuleId)
+{
+	FString Reason;
+	if (Spacecraft.TryInstall(SlotId, ModuleId, Reason)) Presentation.Apply(Spacecraft);
+	else Reason = TEXT("REJECTED: ") + Reason;
+	return Reason;
 }
 
 void AMissionControlGameMode::EndPlay(const EEndPlayReason::Type Reason)
@@ -218,4 +247,5 @@ void AMissionControlGameMode::EndPlay(const EEndPlayReason::Type Reason)
 		OrbitalWidget.Reset();
 	}
 	Super::EndPlay(Reason);
+	DesignerWidget.Reset();
 }

@@ -147,6 +147,12 @@ settings.set_editor_property('dynamic_global_illumination_method',u.DynamicGloba
 pp.set_editor_property('settings',settings)
 start=actors.spawn_actor_from_class(u.PlayerStart,u.Vector(1161,-1859,192),u.Rotator(pitch=-5,yaw=122,roll=0))
 start.set_actor_label('OrbiterCameraStart')
+# Preserve designer bindings if this optional full scene generator is run in the future.
+import sys
+sys.path.insert(0, str(ROOT/'Scripts'))
+from tag_spacecraft_parts import tag_part
+for actor in actors.get_all_level_actors():
+    tag_part(actor)
 level.save_current_level()
 edit.save_directory(DEST,only_if_is_dirty=False,recursive=True)
 u.log('NOMINAL_LUNAR_LEVEL_BUILD_SUCCESS')
