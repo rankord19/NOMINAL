@@ -2,7 +2,7 @@
 
 bool FSpacecraftModule::IsValid() const
 {
-	for (double Value : {MassKg, RatedPowerW, AntennaDiameterM, ThrustN, SpecificImpulseS})
+	for (double Value : {MassKg, RatedPowerW, AntennaDiameterM, ThrustN, SpecificImpulseS, UsableCapacityWh})
 		if (!FMath::IsFinite(Value) || Value < 0) return false;
 	if (Id.IsNone() || Name.IsEmpty() || MassKg <= 0) return false;
 	switch (Category)
@@ -10,6 +10,7 @@ bool FSpacecraftModule::IsValid() const
 	case ESpacecraftCategory::Power: return RatedPowerW > 0;
 	case ESpacecraftCategory::Communications: return AntennaDiameterM > 0;
 	case ESpacecraftCategory::Propulsion: return ThrustN > 0 && SpecificImpulseS > 0;
+	case ESpacecraftCategory::PowerStorage: return UsableCapacityWh > 0;
 	default: return false;
 	}
 }
@@ -23,7 +24,9 @@ const TArray<FSpacecraftModule>& FSpacecraftCatalog::Modules()
 		{TEXT("comms.dish12"), TEXT("1.2 m dish assembly"), ESpacecraftCategory::Communications, 18, 0, 1.2},
 		{TEXT("comms.dish06"), TEXT("0.6 m dish assembly"), ESpacecraftCategory::Communications, 8, 0, 0.6},
 		{TEXT("propulsion.standard"), TEXT("Standard engine assembly"), ESpacecraftCategory::Propulsion, 30, 0, 0, 400, 300},
-		{TEXT("propulsion.compact"), TEXT("Compact engine assembly"), ESpacecraftCategory::Propulsion, 14, 0, 0, 100, 280}
+		{TEXT("propulsion.compact"), TEXT("Compact engine assembly"), ESpacecraftCategory::Propulsion, 14, 0, 0, 100, 280},
+		{TEXT("storage.500"), TEXT("500 Wh battery"), ESpacecraftCategory::PowerStorage, 20, 0, 0, 0, 0, 500},
+		{TEXT("storage.1000"), TEXT("1000 Wh battery"), ESpacecraftCategory::PowerStorage, 35, 0, 0, 0, 0, 1000}
 	};
 	return Data;
 }
@@ -33,7 +36,8 @@ const TArray<FSpacecraftSlot>& FSpacecraftCatalog::Slots()
 	static const TArray<FSpacecraftSlot> Data = {
 		{TEXT("power"), TEXT("Power generation"), ESpacecraftCategory::Power, TEXT("power.wing6")},
 		{TEXT("communications"), TEXT("Communications"), ESpacecraftCategory::Communications, TEXT("comms.dish12")},
-		{TEXT("propulsion"), TEXT("Propulsion"), ESpacecraftCategory::Propulsion, TEXT("propulsion.standard")}
+		{TEXT("propulsion"), TEXT("Propulsion"), ESpacecraftCategory::Propulsion, TEXT("propulsion.standard")},
+		{TEXT("storage"), TEXT("Power storage"), ESpacecraftCategory::PowerStorage, TEXT("storage.500")}
 	};
 	return Data;
 }
@@ -92,5 +96,12 @@ double FSpacecraftConfiguration::TotalRatedPowerW() const
 {
 	double Total = FSpacecraftCatalog::BusRatedPowerW;
 	for (const auto& Slot : FSpacecraftCatalog::Slots()) if (const auto* M = Installed(Slot.Id)) Total += M->RatedPowerW;
+	return Total;
+}
+
+double FSpacecraftConfiguration::TotalBatteryCapacityWh() const
+{
+	double Total = 0;
+	for (const auto& Slot : FSpacecraftCatalog::Slots()) if (const auto* M = Installed(Slot.Id)) Total += M->UsableCapacityWh;
 	return Total;
 }

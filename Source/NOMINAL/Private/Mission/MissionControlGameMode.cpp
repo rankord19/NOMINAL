@@ -14,6 +14,7 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "Spacecraft/SSpacecraftDesigner.h"
+#include "Spacecraft/SElectricalPowerPanel.h"
 #include "Widgets/Layout/SBox.h"
 
 namespace
@@ -154,6 +155,8 @@ void AMissionControlGameMode::BeginPlay()
 				[ SNew(SButton).Text(FText::FromString(TEXT("Enter lunar view"))).OnClicked_Lambda([this]() { ShowOrbitalView(true); return FReply::Handled(); }) ]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
 				[ SNew(SButton).Text(FText::FromString(TEXT("Spacecraft Designer"))).OnClicked_Lambda([this]() { ShowDesigner(); return FReply::Handled(); }) ]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
+				[ SNew(SButton).Text(FText::FromString(TEXT("Electrical Power System"))).OnClicked_Lambda([this]() { ShowEPS(); return FReply::Handled(); }) ]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 32)
 			[ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("Manual lifecycle controls. Completion does not grade scientific success. Terminal requests are rejected and logged. Restart Play for a new session."))) ]
@@ -167,11 +170,15 @@ void AMissionControlGameMode::BeginPlay()
 	TSharedRef<SOrbitalCanvas> Canvas = SNew(SOrbitalCanvas).CameraPawn(CameraPawn);
 	DesignerWidget = SNew(SBox).WidthOverride(380)
 		[ SNew(SSpacecraftDesigner).Configuration(&Spacecraft)
+			.CanInstall([this]() { return CanEditSpacecraft(); })
 			.Install([this](FName Slot, FName Module) { return InstallModule(Slot, Module); }) ];
 	DesignerWidget->SetVisibility(EVisibility::Collapsed);
+	EPSWidget = SNew(SBox).WidthOverride(560) [ SNew(SElectricalPowerPanel).Model(&EPS).Configuration(&Spacecraft) ];
+	EPSWidget->SetVisibility(EVisibility::Collapsed);
 	OrbitalWidget = SNew(SOverlay)
 		+ SOverlay::Slot() [ Canvas ]
 		+ SOverlay::Slot().HAlign(HAlign_Left).Padding(16, 112, 0, 16) [ DesignerWidget.ToSharedRef() ]
+		+ SOverlay::Slot().HAlign(HAlign_Left).Padding(16, 112, 0, 16) [ EPSWidget.ToSharedRef() ]
 		+ SOverlay::Slot().VAlign(VAlign_Top)
 		[
 			SNew(SBorder).Padding(16).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
@@ -194,6 +201,10 @@ void AMissionControlGameMode::BeginPlay()
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0,0,16,0)
 					[ SNew(SButton).Text(FText::FromString(TEXT("Capture PNG"))).OnClicked_Lambda([]() { FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("Screenshots/LunarView.png"), true, true); return FReply::Handled(); }) ]
 					+ SHorizontalBox::Slot().AutoWidth() [ SNew(STextBlock).Text_UObject(this, &AMissionControlGameMode::PhaseText) ]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(16,0,0,0)
+					[ SNew(SButton).Text(FText::FromString(TEXT("Designer"))).OnClicked_Lambda([this]() { ShowDesigner(); return FReply::Handled(); }) ]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(8,0,0,0)
+					[ SNew(SButton).Text(FText::FromString(TEXT("EPS"))).OnClicked_Lambda([this]() { ShowEPS(); return FReply::Handled(); }) ]
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)
 				[ SNew(STextBlock).Text(FText::FromString(TEXT("NOMINAL  |  LMB: selected drag mode   RMB: orbit   MMB: pan   Wheel: zoom  |  Static visual study; temporary spacecraft."))) ]
@@ -214,6 +225,7 @@ void AMissionControlGameMode::ShowOrbitalView(bool bShow)
 	if (ControlWidget) ControlWidget->SetVisibility(bShow ? EVisibility::Collapsed : EVisibility::Visible);
 	if (OrbitalWidget) OrbitalWidget->SetVisibility(bShow ? EVisibility::Visible : EVisibility::Collapsed);
 	if (DesignerWidget) DesignerWidget->SetVisibility(EVisibility::Collapsed);
+	if (EPSWidget) EPSWidget->SetVisibility(EVisibility::Collapsed);
 }
 
 void AMissionControlGameMode::ShowDesigner()
@@ -226,10 +238,26 @@ void AMissionControlGameMode::ShowDesigner()
 
 FString AMissionControlGameMode::InstallModule(FName SlotId, FName ModuleId)
 {
+	if (!CanEditSpacecraft()) return TEXT("REJECTED: design is locked after Spacecraft Design.");
 	FString Reason;
-	if (Spacecraft.TryInstall(SlotId, ModuleId, Reason)) Presentation.Apply(Spacecraft);
+	if (Spacecraft.TryInstall(SlotId, ModuleId, Reason))
+	{
+		EPS.SyncConfiguration(Spacecraft);
+		Presentation.Apply(Spacecraft);
+	}
 	else Reason = TEXT("REJECTED: ") + Reason;
 	return Reason;
+}
+
+void AMissionControlGameMode::ShowEPS()
+{
+	ShowOrbitalView(true);
+	if (EPSWidget) EPSWidget->SetVisibility(EVisibility::Visible);
+}
+
+bool AMissionControlGameMode::CanEditSpacecraft() const
+{
+	return Lifecycle.GetPhase() == EMissionPhase::Planning || Lifecycle.GetPhase() == EMissionPhase::SpacecraftDesign;
 }
 
 void AMissionControlGameMode::EndPlay(const EEndPlayReason::Type Reason)
@@ -248,4 +276,5 @@ void AMissionControlGameMode::EndPlay(const EEndPlayReason::Type Reason)
 	}
 	Super::EndPlay(Reason);
 	DesignerWidget.Reset();
+	EPSWidget.Reset();
 }

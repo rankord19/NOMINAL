@@ -1,7 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 
-enum class ESpacecraftCategory : uint8 { Power, Communications, Propulsion };
+enum class ESpacecraftCategory : uint8 { Power, Communications, Propulsion, PowerStorage };
 
 /** Illustrative SI specifications, not validated mission hardware. */
 struct NOMINAL_API FSpacecraftModule
@@ -14,6 +14,7 @@ struct NOMINAL_API FSpacecraftModule
 	double AntennaDiameterM = 0;
 	double ThrustN = 0;
 	double SpecificImpulseS = 0;
+	double UsableCapacityWh = 0;
 	bool IsValid() const;
 };
 
@@ -46,6 +47,7 @@ public:
 	const FSpacecraftModule* Installed(FName SlotId) const;
 	double TotalDryMassKg() const;
 	double TotalRatedPowerW() const;
+	double TotalBatteryCapacityWh() const;
 private:
 	TMap<FName, FName> InstalledModules;
 };

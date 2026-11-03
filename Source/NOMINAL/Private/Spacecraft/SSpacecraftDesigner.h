@@ -10,6 +10,7 @@ public:
 	SLATE_BEGIN_ARGS(SSpacecraftDesigner) {}
 		SLATE_ARGUMENT(const FSpacecraftConfiguration*, Configuration)
 		SLATE_ARGUMENT(TFunction<FString(FName, FName)>, Install)
+		SLATE_ARGUMENT(TFunction<bool()>, CanInstall)
 	SLATE_END_ARGS()
 	void Construct(const FArguments& Args);
 private:
@@ -17,6 +18,7 @@ private:
 	FText Summary() const;
 	const FSpacecraftConfiguration* Configuration = nullptr;
 	TFunction<FString(FName, FName)> Install;
+	TFunction<bool()> CanInstall;
 	FName SelectedSlot;
 	FString Status = TEXT("Select a category, then install a module.");
 	TSharedPtr<SVerticalBox> Options;
