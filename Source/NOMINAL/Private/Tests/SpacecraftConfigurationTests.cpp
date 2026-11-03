@@ -13,7 +13,7 @@ bool FSpacecraftConfigurationTest::RunTest(const FString& Parameters)
 {
 	FSpacecraftConfiguration A, B;
 	FString Reason;
-	TestEqual(TEXT("Default dry mass includes bus and all modules"), A.TotalDryMassKg(), 408.0);
+	TestEqual(TEXT("Default dry mass includes bus and all modules"), A.TotalDryMassKg(), 428.0);
 	TestEqual(TEXT("Default power"), A.TotalRatedPowerW(), 1200.0);
 	TSet<FName> Ids;
 	for (const auto& Module : FSpacecraftCatalog::Modules())
@@ -33,16 +33,16 @@ bool FSpacecraftConfigurationTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Unknown slot rejected"), A.TryInstall(TEXT("missing"), TEXT("power.wing2"), Reason));
 	TestFalse(TEXT("Unknown module rejected"), A.TryInstall(TEXT("power"), TEXT("missing"), Reason));
 	TestTrue(TEXT("Solar replacement accepted"), A.TryInstall(TEXT("power"), TEXT("power.wing2"), Reason));
-	TestEqual(TEXT("Replacement removes old mass"), A.TotalDryMassKg(), 373.0);
+	TestEqual(TEXT("Replacement removes old mass"), A.TotalDryMassKg(), 393.0);
 	TestEqual(TEXT("Power recalculated"), A.TotalRatedPowerW(), 400.0);
 	TestTrue(TEXT("Repeated install succeeds without duplication"), A.TryInstall(TEXT("power"), TEXT("power.wing2"), Reason));
-	TestEqual(TEXT("Mass does not accumulate"), A.TotalDryMassKg(), 373.0);
-	TestEqual(TEXT("Independent config unchanged"), B.TotalDryMassKg(), 408.0);
+	TestEqual(TEXT("Mass does not accumulate"), A.TotalDryMassKg(), 393.0);
+	TestEqual(TEXT("Independent config unchanged"), B.TotalDryMassKg(), 428.0);
 	FSpacecraftConfiguration Copy = A;
 	Copy.TryInstall(TEXT("communications"), TEXT("comms.dish06"), Reason);
-	TestEqual(TEXT("Copy modifications are isolated"), A.TotalDryMassKg(), 373.0);
+	TestEqual(TEXT("Copy modifications are isolated"), A.TotalDryMassKg(), 393.0);
 	Copy.TryInstall(TEXT("propulsion"), TEXT("propulsion.compact"), Reason);
-	TestEqual(TEXT("All compact dry mass"), Copy.TotalDryMassKg(), 347.0);
+	TestEqual(TEXT("All compact dry mass"), Copy.TotalDryMassKg(), 367.0);
 	TestEqual(TEXT("Other module replacements preserve generation"), Copy.TotalRatedPowerW(), 400.0);
 	FSpacecraftModule Invalid = FSpacecraftCatalog::Modules()[0];
 	Invalid.MassKg = -1;
@@ -74,7 +74,7 @@ bool FSpacecraftSessionTest::RunTest(const FString& Parameters)
 		Session->ShowDesigner();
 	}
 	TestEqual(TEXT("Session preserves installed module through navigation"), Session->GetSpacecraftConfiguration().Installed(TEXT("power"))->Id, FName(TEXT("power.wing2")));
-	TestEqual(TEXT("Session preserves totals"), Session->GetSpacecraftConfiguration().TotalDryMassKg(), 373.0);
+	TestEqual(TEXT("Session preserves totals"), Session->GetSpacecraftConfiguration().TotalDryMassKg(), 393.0);
 	TestTrue(TEXT("Navigation preserves mission phase"), Session->PhaseText().EqualTo(Phase));
 	TestTrue(TEXT("Navigation preserves mission logs"), Session->LogText().EqualTo(Log));
 	World->DestroyWorld(false);

@@ -5,6 +5,7 @@
 #include "Mission/MissionLifecycle.h"
 #include "Spacecraft/SpacecraftConfiguration.h"
 #include "Spacecraft/SpacecraftPresentation.h"
+#include "Spacecraft/ElectricalPowerSystem.h"
 #include "MissionControlGameMode.generated.h"
 
 class SWidget;
@@ -24,14 +25,19 @@ public:
 	FText LogText() const;
 	void ShowOrbitalView(bool bShow);
 	void ShowDesigner();
+	void ShowEPS();
+	bool CanEditSpacecraft() const;
+	FElectricalPowerSystem& GetEPS() { return EPS; }
 	FString InstallModule(FName SlotId, FName ModuleId);
 	const FSpacecraftConfiguration& GetSpacecraftConfiguration() const { return Spacecraft; }
 private:
 	FSpacecraftConfiguration Spacecraft;
+	FElectricalPowerSystem EPS{Spacecraft};
 	FSpacecraftPresentation Presentation;
 	FMissionLifecycle Lifecycle;
 	TArray<FString> Entries;
 	TSharedPtr<SWidget> ControlWidget;
 	TSharedPtr<SWidget> OrbitalWidget;
 	TSharedPtr<SWidget> DesignerWidget;
+	TSharedPtr<SWidget> EPSWidget;
 };

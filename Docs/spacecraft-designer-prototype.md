@@ -1,5 +1,10 @@
 # Modular spacecraft designer prototype
 
+Task 4 historical baseline. The subsequent [EPS prototype](electrical-power-system.md)
+adds a battery category, changes default dry mass to 428 kg and restricts module
+installation to Planning/Spacecraft Design. See that document for current launch and
+power-testing instructions; the screenshots and measurements below describe Task 4.
+
 Task 4 builds on merged PR #4 (`80495b4`) and preserves Mission Core, Mission Control,
 the lunar scene and the existing camera. No external assets, plugins or dependencies
 were added. The master design document is unchanged.

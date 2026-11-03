@@ -16,6 +16,7 @@ FString Specifications(const FSpacecraftModule& M)
 	case ESpacecraftCategory::Power: return Result + FString::Printf(TEXT("  |  %.0f W rated"), M.RatedPowerW);
 	case ESpacecraftCategory::Communications: return Result + FString::Printf(TEXT("  |  %.1f m dish diameter"), M.AntennaDiameterM);
 	case ESpacecraftCategory::Propulsion: return Result + FString::Printf(TEXT("  |  %.0f N  |  %.0f s Isp"), M.ThrustN, M.SpecificImpulseS);
+	case ESpacecraftCategory::PowerStorage: return Result + FString::Printf(TEXT("  |  %.0f Wh usable"), M.UsableCapacityWh);
 	default: return Result;
 	}
 }
@@ -25,6 +26,7 @@ void SSpacecraftDesigner::Construct(const FArguments& Args)
 {
 	Configuration = Args._Configuration;
 	Install = Args._Install;
+	CanInstall = Args._CanInstall;
 	SelectedSlot = FSpacecraftCatalog::Slots()[0].Id;
 	TSharedRef<SVerticalBox> Categories = SNew(SVerticalBox);
 	for (const auto& Slot : FSpacecraftCatalog::Slots())
@@ -52,7 +54,9 @@ void SSpacecraftDesigner::Construct(const FArguments& Args)
 				+ SVerticalBox::Slot().AutoHeight().Padding(0,16,0,0)
 				[ SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(Status); }).AutoWrapText(true).ColorAndOpacity(FLinearColor(.2f,.8f,.9f)) ]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0,12,0,0)
-				[ SNew(STextBlock).Text(FText::FromString(TEXT("Changes persist during this Play session. Restarting Play restores defaults."))).AutoWrapText(true) ]
+				[ SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(CanInstall()
+					? TEXT("Battery swaps preserve Wh (clamped to capacity), never recharge. Battery is internal: no external mesh change. Session-only design.")
+					: TEXT("DESIGN LOCKED: module changes are allowed only in Planning and Spacecraft Design. Restart Play for a new design session.")); }).AutoWrapText(true) ]
 			]
 		]
 	];
@@ -61,8 +65,8 @@ void SSpacecraftDesigner::Construct(const FArguments& Args)
 
 FText SSpacecraftDesigner::Summary() const
 {
-	FString Result = FString::Printf(TEXT("BASE BUS  |  %.0f kg  |  %.0f W\nTOTAL DRY MASS  %.0f kg\nRATED GENERATION  %.0f W\n"),
-		FSpacecraftCatalog::BusMassKg, FSpacecraftCatalog::BusRatedPowerW, Configuration->TotalDryMassKg(), Configuration->TotalRatedPowerW());
+	FString Result = FString::Printf(TEXT("BASE BUS  |  %.0f kg  |  %.0f W\nTOTAL DRY MASS  %.0f kg\nRATED GENERATION  %.0f W\nBATTERY CAPACITY  %.0f Wh\n"),
+		FSpacecraftCatalog::BusMassKg, FSpacecraftCatalog::BusRatedPowerW, Configuration->TotalDryMassKg(), Configuration->TotalRatedPowerW(), Configuration->TotalBatteryCapacityWh());
 	for (const auto& Slot : FSpacecraftCatalog::Slots())
 		if (const auto* M = Configuration->Installed(Slot.Id)) Result += TEXT("\n") + Slot.Name + TEXT(": ") + M->Name;
 	return FText::FromString(Result);
@@ -83,7 +87,7 @@ void SSpacecraftDesigner::RefreshOptions()
 			+ SVerticalBox::Slot().AutoHeight()
 			[ SNew(SButton)
 				.Text_Lambda([this, Id=M.Id]() { return FText::FromString(Configuration->Installed(SelectedSlot)->Id == Id ? TEXT("Installed") : TEXT("Install / replace")); })
-				.IsEnabled_Lambda([this, Id=M.Id]() { return Configuration->Installed(SelectedSlot)->Id != Id; })
+				.IsEnabled_Lambda([this, Id=M.Id]() { return CanInstall() && Configuration->Installed(SelectedSlot)->Id != Id; })
 				.OnClicked_Lambda([this, Id=M.Id]() { Status = Install(SelectedSlot, Id); return FReply::Handled(); }) ]
 		];
 	}
