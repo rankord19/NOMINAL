@@ -1,4 +1,5 @@
 #include "Mission/MissionControlGameMode.h"
+#include "Mission/SMissionControlDashboard.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -132,39 +133,8 @@ void AMissionControlGameMode::BeginPlay()
 	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
 	if (!Viewport || IsRunningDedicatedServer()) return;
 	Entries.Add(TEXT("SESSION START | Mission Planning"));
-	ControlWidget = SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor(0.015f, 0.025f, 0.04f, 1.f))
-		.Padding(48)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
-			[ SNew(STextBlock).Text(FText::FromString(TEXT("NOMINAL"))).Font(FCoreStyle::GetDefaultFontStyle("Bold", 36)).ColorAndOpacity(FLinearColor(0.2f, 0.8f, 0.9f)) ]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 32)
-			[ SNew(STextBlock).Text(FText::FromString(TEXT("MISSION CONTROL  /  Lifecycle prototype"))) ]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 24)
-			[ SNew(STextBlock).Text_UObject(this, &AMissionControlGameMode::PhaseText).Font(FCoreStyle::GetDefaultFontStyle("Bold", 24)) ]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 16)
-			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 12, 0)
-				[ SNew(SButton).Text(FText::FromString(TEXT("Advance phase"))).OnClicked_Lambda([this]() { AdvancePhase(); return FReply::Handled(); }) ]
-				+ SHorizontalBox::Slot().AutoWidth()
-				[ SNew(SButton).Text(FText::FromString(TEXT("Request failure"))).OnClicked_Lambda([this]() { RequestPhase(EMissionPhase::Failed); return FReply::Handled(); }) ]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
-				[ SNew(SButton).Text(FText::FromString(TEXT("Enter lunar view"))).OnClicked_Lambda([this]() { ShowOrbitalView(true); return FReply::Handled(); }) ]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
-				[ SNew(SButton).Text(FText::FromString(TEXT("Spacecraft Designer"))).OnClicked_Lambda([this]() { ShowDesigner(); return FReply::Handled(); }) ]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(12, 0, 0, 0)
-				[ SNew(SButton).Text(FText::FromString(TEXT("Electrical Power System"))).OnClicked_Lambda([this]() { ShowEPS(); return FReply::Handled(); }) ]
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 32)
-			[ SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("Manual lifecycle controls. Completion does not grade scientific success. Terminal requests are rejected and logged. Restart Play for a new session."))) ]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 12)
-			[ SNew(STextBlock).Text(FText::FromString(TEXT("TRANSITION LOG  /  latest 100 requests"))).ColorAndOpacity(FLinearColor(0.2f, 0.8f, 0.9f)) ]
-			+ SVerticalBox::Slot().FillHeight(1)
-			[ SNew(SScrollBox) + SScrollBox::Slot() [ SNew(STextBlock).Text_UObject(this, &AMissionControlGameMode::LogText).AutoWrapText(true) ] ]
-		];
+	ControlWidget = SNew(SMissionControlDashboard).Session(this)
+		.Phase_Lambda([this]() { return Lifecycle.GetPhase(); });
 	Viewport->AddViewportWidgetContent(ControlWidget.ToSharedRef(), 10);
 	ALunarCameraPawn* CameraPawn = Cast<ALunarCameraPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	TSharedRef<SOrbitalCanvas> Canvas = SNew(SOrbitalCanvas).CameraPawn(CameraPawn);
